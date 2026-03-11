@@ -1,8 +1,10 @@
+use ::crossterm::cursor::MoveTo;
 use crossterm::event::{Event, KeyEvent, KeyModifiers};
 use crossterm::event::{Event::Key, KeyCode::Char, read};
 use crossterm::execute;
-use crossterm::terminal::{Clear, ClearType, disable_raw_mode, enable_raw_mode};
+use crossterm::terminal::{Clear, ClearType, disable_raw_mode, enable_raw_mode, size};
 use std::io::stdout;
+mod terminal;
 
 pub struct Editor {
     should_quit: bool,
@@ -18,6 +20,7 @@ impl Editor {
         let result = self.repl();
         Self::terminate().unwrap();
         result.unwrap();
+        Self::draw_screen().unwrap();
     }
 
     fn initialize() -> Result<(), std::io::Error> {
@@ -70,9 +73,21 @@ impl Editor {
 
     fn refresh_screen(&self) -> Result<(), std::io::Error> {
         if self.should_quit {
-            Self::clear_screen();
+            Self::clear_screen()?;
             print!("Goodbye. \r\n");
         }
+        Ok(())
+    }
+
+    fn draw_screen() -> Result<(), std::io::Error> {
+        let mut stdout = stdout();
+        let (_, rows) = size()?;
+
+        for row in 0..rows {
+            execute!(stdout, MoveTo(0, row))?;
+            print!("~");
+        }
+        execute!(stdout, MoveTo(0, 0))?;
         Ok(())
     }
 }
