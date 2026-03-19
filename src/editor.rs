@@ -1,11 +1,14 @@
+use crossterm::cursor::{Hide, Show};
 use crossterm::event::{Event, KeyEvent, KeyModifiers};
 use crossterm::event::{Event::Key, KeyCode::Char, read};
 mod terminal;
+use crossterm::execute;
+use crossterm::style::Print;
 use terminal::Terminal;
-
 pub struct Editor {
     should_quit: bool,
 }
+use std::io::stdout;
 
 impl Editor {
     pub const fn default() -> Self {
@@ -52,6 +55,10 @@ impl Editor {
     }
 
     fn refresh_screen(&self) -> Result<(), std::io::Error> {
+        let mut stdout = stdout();
+
+        execute!(stdout, Hide)?;
+
         if self.should_quit {
             Terminal::clear_screen()?;
             print!("Goodbye. \r\n");
@@ -59,17 +66,19 @@ impl Editor {
             Self::draw_rows()?;
             Terminal::move_cursor_to(0, 0)?;
         }
+        execute!(stdout, Show)?;
         Ok(())
     }
 
     fn draw_rows() -> Result<(), std::io::Error> {
         let height = Terminal::size()?.1;
+        let mut stdout = stdout();
 
         for current_row in 0..height {
-            print!("~");
+            execute!(stdout, Print("~"))?;
 
             if current_row + 1 < height {
-                print!("\r\n");
+                execute!(stdout, Print("\r\n"))?;
             }
         }
         Ok(())
