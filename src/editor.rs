@@ -2,12 +2,13 @@ use crossterm::cursor::{Hide, Show};
 use crossterm::event::{Event, KeyEvent, KeyModifiers};
 use crossterm::event::{Event::Key, KeyCode::Char, read};
 mod terminal;
-use crossterm::execute;
 use crossterm::style::Print;
+use crossterm::{execute, queue};
 use terminal::Terminal;
 pub struct Editor {
     should_quit: bool,
 }
+use std::io::Write;
 use std::io::stdout;
 
 impl Editor {
@@ -75,12 +76,14 @@ impl Editor {
         let mut stdout = stdout();
 
         for current_row in 0..height {
-            execute!(stdout, Print("~"))?;
+            queue!(stdout, Print("~"))?;
 
             if current_row + 1 < height {
-                execute!(stdout, Print("\r\n"))?;
+                queue!(stdout, Print("\r\n"))?;
             }
         }
+
+        stdout.flush()?;
         Ok(())
     }
 }
