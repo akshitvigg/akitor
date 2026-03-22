@@ -7,6 +7,9 @@ pub struct Editor {
 }
 use std::io::Error;
 
+const NAME: &str = env!("CARGO_PKG_NAME");
+const VERSION: &str = env!("CARGO_PKG_VERSION");
+
 impl Editor {
     pub const fn default() -> Self {
         Self { should_quit: false }
@@ -67,17 +70,45 @@ impl Editor {
         Ok(())
     }
 
+    fn draw_welcome_message() -> Result<(), Error> {
+        let mut welcome_message = format!("{NAME} editor -- version {VERSION}");
+
+        let width = Terminal::size()?.width as usize;
+        let length = welcome_message.len();
+
+        let padding = (width - length) / 2;
+
+        let spaces = " ".repeat(padding - 1);
+
+        welcome_message = format!("~{spaces}{welcome_message}");
+
+        welcome_message.truncate(width);
+        Terminal::print(welcome_message)?;
+        Ok(())
+    }
+
+    fn draw_empty_rows() -> Result<(), Error> {
+        Terminal::print("~")?;
+        Ok(())
+    }
+
     fn draw_rows() -> Result<(), Error> {
         let Size { height, .. } = Terminal::size()?;
 
         for current_row in 0..height {
-            Terminal::move_cursor_to(Position {
-                x: 0,
-                y: current_row,
-            })?;
             Terminal::clear_line()?;
-            Terminal::print("~")?;
+
+            if current_row == height / 3 {
+                Self::draw_welcome_message()?;
+            } else {
+                Self::draw_empty_rows()?;
+            }
+
+            if current_row + 1 < height {
+                Terminal::print("\r\n")?;
+            }
         }
+
         Ok(())
     }
 }
