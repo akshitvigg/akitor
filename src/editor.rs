@@ -1,18 +1,24 @@
+use crossterm::cursor;
 use crossterm::event::{Event, KeyEvent, KeyModifiers};
 use crossterm::event::{Event::Key, KeyCode::Char, read};
 mod terminal;
-use terminal::{Position, Size, Terminal};
-pub struct Editor {
-    should_quit: bool,
-}
 use std::io::Error;
+use terminal::{Position, Size, Terminal};
 
 const NAME: &str = env!("CARGO_PKG_NAME");
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
+pub struct Editor {
+    should_quit: bool,
+    cursor: Position,
+}
+
 impl Editor {
     pub const fn default() -> Self {
-        Self { should_quit: false }
+        Self {
+            should_quit: false,
+            cursor: Position { x: 0, y: 0 },
+        }
     }
 
     pub fn run(&mut self) {
