@@ -1,5 +1,4 @@
-use crossterm::cursor;
-use crossterm::event::{Event, KeyEvent, KeyModifiers};
+use crossterm::event::{Event, KeyEvent, KeyEventKind, KeyModifiers};
 use crossterm::event::{Event::Key, KeyCode::Char, read};
 mod terminal;
 use std::io::Error;
@@ -43,7 +42,10 @@ impl Editor {
 
     fn evaluate_event(&mut self, event: &Event) {
         if let Key(KeyEvent {
-            code, modifiers, ..
+            code,
+            modifiers,
+            kind: KeyEventKind::Press,
+            ..
         }) = event
         {
             match code {
@@ -53,6 +55,36 @@ impl Editor {
                     // we will deref. explicitly
 
                     self.should_quit = true;
+                }
+
+                crossterm::event::KeyCode::Right => {
+                    let size = Terminal::size().unwrap();
+                    let width = size.width;
+
+                    if self.cursor.x < width - 1 {
+                        self.cursor.x += 1;
+                    }
+                }
+
+                crossterm::event::KeyCode::Left => {
+                    if self.cursor.x > 0 {
+                        self.cursor.x -= 1;
+                    }
+                }
+
+                crossterm::event::KeyCode::Down => {
+                    let size = Terminal::size().unwrap();
+                    let height = size.height;
+
+                    if self.cursor.y < height - 1 {
+                        self.cursor.y += 1;
+                    }
+                }
+
+                crossterm::event::KeyCode::Up => {
+                    if self.cursor.y > 0 {
+                        self.cursor.y -= 1;
+                    }
                 }
 
                 _ => (),
@@ -68,7 +100,10 @@ impl Editor {
             Terminal::print("Goodbye. \r\n")?;
         } else {
             Self::draw_rows()?;
-            Terminal::move_cursor_to(Position { x: 0, y: 0 })?;
+            Terminal::move_cursor_to(Position {
+                x: self.cursor.x,
+                y: self.cursor.y,
+            })?;
         }
 
         Terminal::show_cursor()?;
