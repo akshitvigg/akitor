@@ -1,13 +1,18 @@
+mod buffer;
 use super::terminal::{Size, Terminal};
+use buffer::Buffer;
 use std::io::Error;
 
 const NAME: &str = env!("CARGO_PKG_NAME");
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
-pub struct View;
+#[derive(Default)]
+pub struct View {
+    buffer: Buffer,
+}
 
 impl View {
-    pub fn render() -> Result<(), Error> {
+    pub fn render(&self) -> Result<(), Error> {
         let Size { height, .. } = Terminal::size()?;
 
         Terminal::clear_line()?;

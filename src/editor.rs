@@ -17,6 +17,7 @@ struct Location {
 pub struct Editor {
     should_quit: bool,
     location: Location,
+    view: View,
 }
 
 impl Editor {
