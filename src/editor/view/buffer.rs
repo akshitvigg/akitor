@@ -5,7 +5,7 @@ pub struct Buffer {
 impl Default for Buffer {
     fn default() -> Self {
         Self {
-            lines: vec!["Hello, Hecto!".to_string()],
+            lines: vec!["Hello World!".to_string()],
         }
     }
 }

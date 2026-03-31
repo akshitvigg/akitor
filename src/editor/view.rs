@@ -15,9 +15,6 @@ impl View {
     pub fn render(&self) -> Result<(), Error> {
         let Size { height, .. } = Terminal::size()?;
 
-        Terminal::clear_line()?;
-        Terminal::print("Hello, World!\r\n")?;
-
         for current_row in 0..height {
             Terminal::clear_line()?;
             // we allow this since we don't care if our welcome message is put _exactly_ in the middle.
@@ -25,13 +22,15 @@ impl View {
 
             if let Some(line) = self.buffer.lines.get(current_row) {
                 Terminal::print(line)?;
+                Terminal::print("\r\n")?;
+                continue;
+            }
+
+            #[allow(clippy::integer_division)]
+            if current_row == height / 3 {
+                Self::draw_welcome_message()?;
             } else {
-                #[allow(clippy::integer_division)]
-                if current_row == height / 3 {
-                    Self::draw_welcome_message()?;
-                } else {
-                    Self::draw_empty_rows()?;
-                }
+                Self::draw_empty_rows()?;
             }
 
             if current_row.saturating_add(1) < height {
