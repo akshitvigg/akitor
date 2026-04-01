@@ -12,7 +12,7 @@ pub struct View {
 }
 
 impl View {
-    fn render_welcome_message() -> Result<(), Error> {
+    fn render_welcome_screen() -> Result<(), Error> {
         let Size { height, .. } = Terminal::size()?;
 
         for current_row in 0..height {
@@ -37,6 +37,8 @@ impl View {
         let Size { height, .. } = Terminal::size()?;
 
         for current_row in 0..height {
+            Terminal::clear_line()?;
+
             if let Some(line) = self.buffer.lines.get(current_row) {
                 Terminal::print(line)?;
                 Terminal::print("\r\n")?;
@@ -53,19 +55,17 @@ impl View {
 
     pub fn render(&self) -> Result<(), Error> {
         if self.buffer.is_empty() {
-            Self::render_welcome_message()?;
+            Self::render_welcome_screen()?;
         } else {
             self.render_buffer()?;
         }
         Ok(())
     }
 
-    pub fn load(&mut self, file_name: &str) -> Result<(), Error> {
+    pub fn load(&mut self, file_name: &str) {
         if let Ok(buffer) = Buffer::load(file_name) {
             self.buffer = buffer
         }
-
-        Ok(())
     }
 
     fn draw_welcome_message() -> Result<(), Error> {

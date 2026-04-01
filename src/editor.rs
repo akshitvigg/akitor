@@ -32,9 +32,7 @@ impl Editor {
     fn handle_args(&mut self) {
         let args: Vec<String> = env::args().collect();
         if let Some(file_name) = args.get(1) {
-            if let Err(e) = self.view.load(file_name) {
-                println!("Error loading file: {}", e);
-            }
+            self.view.load(file_name);
         }
     }
 
