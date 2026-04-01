@@ -2,7 +2,7 @@ use core::cmp::min;
 use crossterm::event::{Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 use crossterm::event::{Event::Key, read};
 mod terminal;
-use std::io::Error;
+use std::{env, io::Error};
 use terminal::{Position, Size, Terminal};
 mod view;
 use view::View;
@@ -21,16 +21,21 @@ pub struct Editor {
 }
 
 impl Editor {
-    pub fn open(&mut self, file_name: &str) -> Result<(), Error> {
-        self.view.load(file_name)?;
-        Ok(())
-    }
-
     pub fn run(&mut self) {
         Terminal::initialize().unwrap();
+        self.handle_args();
         let result = self.repl();
         Terminal::terminate().unwrap();
         result.unwrap();
+    }
+
+    fn handle_args(&mut self) {
+        let args: Vec<String> = env::args().collect();
+        if let Some(file_name) = args.get(1) {
+            if let Err(e) = self.view.load(file_name) {
+                println!("Error loading file: {}", e);
+            }
+        }
     }
 
     fn repl(&mut self) -> Result<(), Error> {
