@@ -30,6 +30,7 @@ impl Editor {
     }
 
     fn handle_args(&mut self) {
+        self.view.needs_redraw = true;
         let args: Vec<String> = env::args().collect();
         if let Some(file_name) = args.get(1) {
             self.view.load(file_name);
@@ -38,7 +39,10 @@ impl Editor {
 
     fn repl(&mut self) -> Result<(), Error> {
         loop {
-            self.refresh_screen()?;
+            if self.view.needs_redraw {
+                self.refresh_screen()?;
+                self.view.needs_redraw = false;
+            }
 
             if self.should_quit {
                 break;
@@ -66,6 +70,7 @@ impl Editor {
         }
 
         self.location = Location { x, y };
+        self.view.needs_redraw = true;
 
         Ok(())
     }
@@ -85,6 +90,7 @@ impl Editor {
                     // we will deref. explicitly
 
                     self.should_quit = true;
+                    self.view.needs_redraw = true;
                 }
 
                 KeyCode::Up
