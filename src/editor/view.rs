@@ -1,5 +1,5 @@
 mod buffer;
-use super::terminal::{Size, Terminal};
+use super::terminal::{Position, Size, Terminal};
 use buffer::Buffer;
 use std::io::Error;
 
@@ -16,18 +16,21 @@ impl View {
         let Size { height, .. } = Terminal::size()?;
 
         for current_row in 0..height {
+            Terminal::move_caret_to(Position {
+                col: 0,
+                row: current_row,
+            })?;
+
             Terminal::clear_line()?;
             // we allow this since we don't care if our welcome message is put _exactly_ in the middle.
             // it's allowed to be a bit up or downCollapse comment
+            //
 
             #[allow(clippy::integer_division)]
             if current_row == height / 3 {
                 Self::draw_welcome_message()?;
             } else {
                 Self::draw_empty_rows()?;
-            }
-            if current_row.saturating_add(1) < height {
-                Terminal::print("\r\n")?;
             }
         }
         Ok(())
@@ -37,17 +40,17 @@ impl View {
         let Size { height, .. } = Terminal::size()?;
 
         for current_row in 0..height {
+            Terminal::move_caret_to(Position {
+                col: 0,
+                row: current_row,
+            })?;
+
             Terminal::clear_line()?;
 
             if let Some(line) = self.buffer.lines.get(current_row) {
                 Terminal::print(line)?;
-                Terminal::print("\r\n")?;
             } else {
                 Self::draw_empty_rows()?;
-            }
-
-            if current_row.saturating_add(1) < height {
-                Terminal::print("\r\n")?;
             }
         }
         Ok(())
