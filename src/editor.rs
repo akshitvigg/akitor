@@ -1,6 +1,6 @@
 use core::cmp::min;
+use crossterm::event::read;
 use crossterm::event::{Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
-use crossterm::event::{Event::Key, read};
 mod terminal;
 use std::{env, io::Error};
 use terminal::{Position, Size, Terminal};
@@ -76,34 +76,39 @@ impl Editor {
     }
 
     fn evaluate_event(&mut self, event: &Event) -> Result<(), Error> {
-        if let Key(KeyEvent {
-            code,
-            modifiers,
-            kind: KeyEventKind::Press,
-            ..
-        }) = event
-        {
-            match code {
-                // when pattern matching rust does implicit(automatic) deref.
-                KeyCode::Char('q') if *modifiers == KeyModifiers::CONTROL => {
-                    // in the case of comparison
-                    // we will deref. explicitly
+        match event {
+            Event::Key(KeyEvent {
+                code,
+                modifiers,
+                kind: KeyEventKind::Press,
+                ..
+            }) => {
+                match code {
+                    // when pattern matching rust does implicit(automatic) deref.
+                    KeyCode::Char('q') if *modifiers == KeyModifiers::CONTROL => {
+                        // in the case of comparison
+                        // we will deref. explicitly
 
-                    self.should_quit = true;
-                    self.view.needs_redraw = true;
+                        self.should_quit = true;
+                        self.view.needs_redraw = true;
+                    }
+
+                    KeyCode::Up
+                    | KeyCode::Down
+                    | KeyCode::Left
+                    | KeyCode::Right
+                    | KeyCode::PageUp
+                    | KeyCode::PageDown
+                    | KeyCode::Home
+                    | KeyCode::End => self.move_to(*code)?,
+
+                    _ => (),
                 }
-
-                KeyCode::Up
-                | KeyCode::Down
-                | KeyCode::Left
-                | KeyCode::Right
-                | KeyCode::PageUp
-                | KeyCode::PageDown
-                | KeyCode::Home
-                | KeyCode::End => self.move_to(*code)?,
-
-                _ => (),
             }
+            Event::Resize(_, _) => {
+                self.view.needs_redraw = true;
+            }
+            _ => (),
         }
         Ok(())
     }
