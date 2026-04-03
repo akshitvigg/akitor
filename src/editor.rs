@@ -30,7 +30,6 @@ impl Editor {
     }
 
     fn handle_args(&mut self) {
-        self.view.needs_redraw = true;
         let args: Vec<String> = env::args().collect();
         if let Some(file_name) = args.get(1) {
             self.view.load(file_name);
@@ -39,16 +38,14 @@ impl Editor {
 
     fn repl(&mut self) -> Result<(), Error> {
         loop {
-            if self.view.needs_redraw {
-                self.refresh_screen()?;
-                self.view.needs_redraw = false;
-            }
+            self.refresh_screen()?;
 
             if self.should_quit {
                 break;
             }
+
             let event = read()?;
-            self.evaluate_event(&event)?;
+            self.evaluate_event(event)?;
         }
         Ok(())
     }
@@ -75,7 +72,11 @@ impl Editor {
         Ok(())
     }
 
-    fn evaluate_event(&mut self, event: &Event) -> Result<(), Error> {
+    //needless_pass_by_value : Event is not huge, so there is not a
+    //performance overhead in passing by value, and pattern matching in this
+    //function would be needlessly complicated if we pass by reference here.
+    #[allow(clippy::needless_pass_by_value)]
+    fn evaluate_event(&mut self, event: Event) -> Result<(), Error> {
         match event {
             Event::Key(KeyEvent {
                 code,
@@ -83,9 +84,9 @@ impl Editor {
                 kind: KeyEventKind::Press,
                 ..
             }) => {
-                match code {
+                match (code, modifiers) {
                     // when pattern matching rust does implicit(automatic) deref.
-                    KeyCode::Char('q') if *modifiers == KeyModifiers::CONTROL => {
+                    (KeyCode::Char('q'), KeyModifiers::CONTROL) => {
                         // in the case of comparison
                         // we will deref. explicitly
 
@@ -93,27 +94,41 @@ impl Editor {
                         self.view.needs_redraw = true;
                     }
 
-                    KeyCode::Up
-                    | KeyCode::Down
-                    | KeyCode::Left
-                    | KeyCode::Right
-                    | KeyCode::PageUp
-                    | KeyCode::PageDown
-                    | KeyCode::Home
-                    | KeyCode::End => self.move_to(*code)?,
+                    (
+                        KeyCode::Up
+                        | KeyCode::Down
+                        | KeyCode::Left
+                        | KeyCode::Right
+                        | KeyCode::PageUp
+                        | KeyCode::PageDown
+                        | KeyCode::Home
+                        | KeyCode::End,
+                        _,
+                    ) => self.move_to(code)?,
 
                     _ => (),
                 }
             }
-            Event::Resize(_, _) => {
-                self.view.needs_redraw = true;
+
+            Event::Resize(width_u16, height_u16) => {
+                //clippy::as_conversions: will run into problem for rare edge case system where
+                //usize < u16
+                #[allow(clippy::as_conversions)]
+                let width = width_u16 as usize;
+
+                //clippy:: as_conversions: will run into problem for  rare edge case system where
+                //usize < u16
+                #[allow(clippy::as_conversions)]
+                let height = height_u16 as usize;
+
+                self.view.resize(Size { height, width });
             }
             _ => (),
         }
         Ok(())
     }
 
-    fn refresh_screen(&self) -> Result<(), Error> {
+    fn refresh_screen(&mut self) -> Result<(), Error> {
         Terminal::hide_caret()?;
         Terminal::move_caret_to(Position::default())?;
 
