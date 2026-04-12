@@ -1,4 +1,3 @@
-use core::cmp::min;
 mod buffer;
 use crate::editor::terminal::Position;
 
@@ -21,12 +20,33 @@ pub struct View {
     pub needs_redraw: bool,
     size: Size,
     location: Location,
+    scroll_offset: Location,
 }
 
 impl View {
     pub fn resize(&mut self, to: Size) {
         self.size = to;
         self.needs_redraw = true;
+    }
+
+    pub fn update_scroll(&mut self) {
+        let width = self.size.width;
+        let height = self.size.height;
+
+        let cursor_x = self.location.x;
+        let cursor_y = self.location.y;
+
+        if cursor_x >= self.scroll_offset.x + width {
+            self.scroll_offset.x = cursor_x - (width - 1);
+        } else if cursor_x < self.scroll_offset.x {
+            self.scroll_offset.x = cursor_x;
+        }
+
+        if cursor_y >= self.scroll_offset.y + height {
+            self.scroll_offset.y = cursor_y - (height - 1);
+        } else if cursor_y < self.scroll_offset.y {
+            self.scroll_offset.y = cursor_y;
+        }
     }
 
     pub fn cursor_pos(&self) -> Position {
@@ -130,6 +150,7 @@ impl Default for View {
             needs_redraw: true,
             size: Terminal::size().unwrap_or_default(),
             location: Location::default(),
+            scroll_offset: Location::default(),
         }
     }
 }
