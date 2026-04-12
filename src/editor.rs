@@ -1,4 +1,3 @@
-use core::cmp::min;
 use crossterm::event::read;
 use crossterm::event::{Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 mod terminal;
@@ -7,20 +6,13 @@ use std::{
     io::Error,
     panic::{set_hook, take_hook},
 };
-use terminal::{Position, Size, Terminal};
+use terminal::{Size, Terminal};
 mod view;
 use view::View;
-
-#[derive(Copy, Clone, Default)]
-struct Location {
-    x: usize,
-    y: usize,
-}
 
 #[derive(Default)]
 pub struct Editor {
     should_quit: bool,
-    location: Location,
     view: View,
 }
 
@@ -41,7 +33,6 @@ impl Editor {
 
         Ok(Self {
             should_quit: false,
-            location: Location::default(),
             view,
         })
     }
@@ -62,28 +53,6 @@ impl Editor {
                 }
             };
         }
-    }
-
-    fn move_to(&mut self, key_code: KeyCode) -> Result<(), Error> {
-        let Location { mut x, mut y } = self.location;
-        let Size { height, width } = Terminal::size().unwrap_or_default();
-
-        match key_code {
-            KeyCode::Up => y = y.saturating_sub(1),
-            KeyCode::Down => y = min(height.saturating_sub(1), y.saturating_add(1)),
-            KeyCode::Right => x = min(width.saturating_sub(1), x.saturating_add(1)),
-            KeyCode::Left => x = x.saturating_sub(1),
-            KeyCode::PageUp => y = 0,
-            KeyCode::PageDown => y = height.saturating_sub(1),
-            KeyCode::Home => x = 0,
-            KeyCode::End => x = width.saturating_sub(1),
-            _ => (),
-        }
-
-        self.location = Location { x, y };
-        self.view.needs_redraw = true;
-
-        Ok(())
     }
 
     //needless_pass_by_value : Event is not huge, so there is not a
@@ -119,7 +88,7 @@ impl Editor {
                         | KeyCode::End,
                         _,
                     ) => {
-                        let _ = self.move_to(code);
+                        let _ = self.view.move_cursor(code);
                     }
 
                     _ => {}
@@ -146,10 +115,8 @@ impl Editor {
     fn refresh_screen(&mut self) {
         let _ = Terminal::hide_caret();
         self.view.render();
-        let _ = Terminal::move_caret_to(Position {
-            col: self.location.x,
-            row: self.location.y,
-        });
+        let pos = self.view.cursor_pos();
+        let _ = Terminal::move_caret_to(pos);
         let _ = Terminal::show_caret();
         let _ = Terminal::execute();
     }
