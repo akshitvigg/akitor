@@ -1,3 +1,4 @@
+use core::cmp::min;
 mod buffer;
 use crate::editor::terminal::Position;
 
@@ -51,8 +52,8 @@ impl View {
 
     pub fn cursor_pos(&self) -> Position {
         Position {
-            col: self.location.x,
-            row: self.location.y,
+            col: self.location.x - self.scroll_offset.x,
+            row: self.location.y - self.scroll_offset.y,
         }
     }
 
@@ -73,6 +74,7 @@ impl View {
         }
 
         self.location = Location { x, y };
+        self.update_scroll();
         self.needs_redraw = true;
 
         Ok(())
@@ -99,12 +101,15 @@ impl View {
         let vertical_center = height / 3;
 
         for current_row in 0..height {
-            if let Some(line) = self.buffer.lines.get(current_row) {
-                let truncated_line = if line.len() >= width {
-                    &line[0..width]
+            if let Some(line) = self.buffer.lines.get(current_row + self.scroll_offset.y) {
+                let start = self.scroll_offset.x;
+                let end = min(start + width, line.len());
+                let truncated_line = if start >= line.len() {
+                    ""
                 } else {
-                    line
+                    &line[start..end]
                 };
+
                 Self::render_line(current_row, truncated_line);
             } else if current_row == vertical_center && self.buffer.is_empty() {
                 Self::render_line(current_row, &Self::build_welcome_message(width));
