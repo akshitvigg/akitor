@@ -1,20 +1,61 @@
+use core::cmp::min;
 mod buffer;
+use crate::editor::terminal::Position;
+
 use super::terminal::{Size, Terminal};
 use buffer::Buffer;
+use crossterm::event::KeyCode;
 
+use std::io::Error;
 const NAME: &str = env!("CARGO_PKG_NAME");
 const VERSION: &str = env!("CARGO_PKG_VERSION");
+
+#[derive(Copy, Clone, Default)]
+pub struct Location {
+    x: usize,
+    y: usize,
+}
 
 pub struct View {
     buffer: Buffer,
     pub needs_redraw: bool,
     size: Size,
+    location: Location,
 }
 
 impl View {
     pub fn resize(&mut self, to: Size) {
         self.size = to;
         self.needs_redraw = true;
+    }
+
+    pub fn cursor_pos(&self) -> Position {
+        Position {
+            col: self.location.x,
+            row: self.location.y,
+        }
+    }
+
+    pub fn move_cursor(&mut self, key_code: KeyCode) -> Result<(), Error> {
+        let Location { mut x, mut y } = self.location;
+        // let Size { height, width } = Terminal::size().unwrap_or_default();
+
+        match key_code {
+            KeyCode::Up => y = y.saturating_sub(1),
+            KeyCode::Down => y = y.saturating_add(1),
+            KeyCode::Right => x = x.saturating_add(1),
+            KeyCode::Left => x = x.saturating_sub(1),
+            KeyCode::PageUp => y = 0,
+            KeyCode::PageDown => y += 10,
+            KeyCode::Home => x = 0,
+            KeyCode::End => x += 10,
+            _ => (),
+        }
+
+        self.location = Location { x, y };
+        self.needs_redraw = true;
+
+        Ok(())
     }
 
     fn render_line(at: usize, line_text: &str) {
@@ -88,6 +129,7 @@ impl Default for View {
             buffer: Buffer::default(),
             needs_redraw: true,
             size: Terminal::size().unwrap_or_default(),
+            location: Location::default(),
         }
     }
 }
