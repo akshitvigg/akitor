@@ -1,14 +1,17 @@
 use crossterm::event::read;
-use crossterm::event::{Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
+use crossterm::event::{Event, KeyEvent, KeyEventKind};
 mod terminal;
 use std::{
     env,
     io::Error,
     panic::{set_hook, take_hook},
 };
-use terminal::{Size, Terminal};
+use terminal::Terminal;
 mod view;
 use view::View;
+
+mod editorcommand;
+use editorcommand::EditorCommand;
 
 #[derive(Default)]
 pub struct Editor {
@@ -60,55 +63,33 @@ impl Editor {
     //function would be needlessly complicated if we pass by reference here.
     #[allow(clippy::needless_pass_by_value)]
     fn evaluate_event(&mut self, event: Event) {
-        match event {
-            Event::Key(KeyEvent {
-                code,
-                modifiers,
-                kind: KeyEventKind::Press,
-                ..
-            }) => {
-                match (code, modifiers) {
-                    // when pattern matching rust does implicit(automatic) deref.
-                    (KeyCode::Char('q'), KeyModifiers::CONTROL) => {
-                        // in the case of comparison
-                        // we will deref. explicitly
+        let should_process = match &event {
+            Event::Key(KeyEvent { kind, .. }) => kind == &KeyEventKind::Press,
+            Event::Resize(_, _) => true,
+            _ => false,
+        };
 
+        if should_process {
+            match EditorCommand::try_from(event) {
+
+                Ok(command) => {
+                     if matches!(command,EditorCommand::Quit){
                         self.should_quit = true;
-                        self.view.needs_redraw = true;
+                    }else{
+                        self.view.handle_command(command);
                     }
-
-                    (
-                        KeyCode::Up
-                        | KeyCode::Down
-                        | KeyCode::Left
-                        | KeyCode::Right
-                        | KeyCode::PageUp
-                        | KeyCode::PageDown
-                        | KeyCode::Home
-                        | KeyCode::End,
-                        _,
-                    ) => {
-                        let _ = self.view.move_cursor(code);
+                }Err(err) => {
+                    #[cfg(debug_assertions)]
+                    {
+                        panic!("Could not handle command: {err}");
                     }
-
-                    _ => {}
+                }
+            }else{
+                #[cfg(debug_assertions)]
+                {
+                    panic!("Received and discarded unsupported or non-press event.");
                 }
             }
-
-            Event::Resize(width_u16, height_u16) => {
-                //clippy::as_conversions: will run into problem for rare edge case system where
-                //usize < u16
-                #[allow(clippy::as_conversions)]
-                let width = width_u16 as usize;
-
-                //clippy:: as_conversions: will run into problem for  rare edge case system where
-                //usize < u16
-                #[allow(clippy::as_conversions)]
-                let height = height_u16 as usize;
-
-                self.view.resize(Size { height, width });
-            }
-            _ => {}
         }
     }
 
@@ -116,7 +97,7 @@ impl Editor {
         let _ = Terminal::hide_caret();
         self.view.render();
         let pos = self.view.cursor_pos();
-        let _ = Terminal::move_caret_to(pos);
+        let _ = Terminal::move_caret_to(self.view.get_position());
         let _ = Terminal::show_caret();
         let _ = Terminal::execute();
     }
