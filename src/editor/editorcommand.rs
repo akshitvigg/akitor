@@ -4,7 +4,7 @@ use std::convert::TryFrom;
 
 use super::terminal::Size;
 
-pub enum Directions {
+pub enum Direction {
     Up,
     Down,
     Left,
@@ -16,7 +16,7 @@ pub enum Directions {
 }
 
 pub enum EditorCommand {
-    Move(Directions),
+    Move(Direction),
     Resize(Size),
     Quit,
 }
@@ -30,14 +30,14 @@ impl TryFrom<Event> for EditorCommand {
                 code, modifiers, ..
             }) => match (code, modifiers) {
                 (KeyCode::Char('q'), KeyModifiers::CONTROL) => Ok(Self::Quit),
-                (KeyCode::Up, _) => Ok(Self::Move(Directions::Up)),
-                (KeyCode::Down, _) => Ok(Self::Move(Directions::Down)),
-                (KeyCode::Left, _) => Ok(Self::Move(Directions::Left)),
-                (KeyCode::Right, _) => Ok(Self::Move(Directions::Right)),
-                (KeyCode::Home, _) => Ok(Self::Move(Directions::Home)),
-                (KeyCode::End, _) => Ok(Self::Move(Directions::End)),
-                (KeyCode::PageUp, _) => Ok(Self::Move(Directions::PageUp)),
-                (KeyCode::PageDown, _) => Ok(Self::Move(Directions::PageDown)),
+                (KeyCode::Up, _) => Ok(Self::Move(Direction::Up)),
+                (KeyCode::Down, _) => Ok(Self::Move(Direction::Down)),
+                (KeyCode::Left, _) => Ok(Self::Move(Direction::Left)),
+                (KeyCode::Right, _) => Ok(Self::Move(Direction::Right)),
+                (KeyCode::Home, _) => Ok(Self::Move(Direction::Home)),
+                (KeyCode::End, _) => Ok(Self::Move(Direction::End)),
+                (KeyCode::PageUp, _) => Ok(Self::Move(Direction::PageUp)),
+                (KeyCode::PageDown, _) => Ok(Self::Move(Direction::PageDown)),
                 _ => Err(format!("Key Code not supported: {code:?}")),
             },
             Event::Resize(height_u16, width_u16) => {
